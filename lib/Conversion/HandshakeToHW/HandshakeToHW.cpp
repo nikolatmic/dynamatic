@@ -1331,6 +1331,32 @@ ConvertInstance::matchAndRewrite(handshake::InstanceOp instOp,
   auto topLevelModOp = instOp->getParentOfType<mlir::ModuleOp>();
   hw::HWModuleLike modOp = findExternMod(topLevelModOp, instOp.getModule());
   assert(modOp && "failed to find referenced external module");
+
+  // Check if modOp is indeed an hw.module.extern operation, as we want to
+  // modify its attributes.
+  if (auto externMod = dyn_cast<hw::HWModuleExternOp>(modOp.getOperation())) {
+    SmallVector<NamedAttribute> instantiatedParameters;
+
+    // Iterate through all attributes of the handshake.instance op.
+    for (mlir::NamedAttribute attr : instOp->getAttrs()) {
+      // Rule: attributes whose names do NOT start with "handshake." are assumed
+      // to be instantiated parameters.
+      if (!attr.getName().strref().startswith("handshake.") &&
+          attr.getName().strref() != "module") {
+        instantiatedParameters.push_back(attr);
+      }
+    }
+
+    // If there are parameters to propagate, set them on the hw.module.extern.
+    // This will either add the 'hw.parameters' attribute or update it if it
+    // exists.
+    if (!instantiatedParameters.empty()) {
+      // Use a `DictionaryAttr` to hold the `hw.parameters`
+      externMod->setAttr("hw.parameters",
+                         rewriter.getDictionaryAttr(instantiatedParameters));
+    }
+  }
+
   StringAttr instNameAttr = rewriter.getStringAttr(getUniqueName(instOp));
   rewriter.replaceOpWithNewOp<hw::InstanceOp>(instOp, modOp, instNameAttr,
                                               instOperands);

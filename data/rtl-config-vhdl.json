@@ -8,6 +8,19 @@
     "dependencies": ["join", "delay_buffer", "oehb", "flopoco_ip_cores"]
   },
   {
+    "name": "__custom_component",
+    "parameters": [
+      {
+        "name": "MULTIPLIER",
+        "type": "unsigned"
+      }
+    ],
+    "generic": "$DYNAMATIC/data/vhdl/custom_component.vhd",
+    "dependencies": [
+      "join"
+    ]
+  },
+  {
     "name": "handshake.addi",
     "parameters": [
       { "name": "DATA_TYPE", "type": "dataflow", "data-lb": 1, "extra-eq": 0 }
